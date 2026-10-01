@@ -1,0 +1,87 @@
+import crypto from "crypto";
+import { redisClient } from "../index.js";
+
+const isProduction = process.env.NODE_ENV === "production";
+
+// 7 days in seconds to match session TTL
+const SESSION_TTL = 7 * 24 * 60 * 60;
+
+export const generateCSRFToken = async (userId, res) => {
+  const csrfToken = crypto.randomBytes(32).toString("hex");
+  const csrfKey = `csrf:${userId}`;
+
+  // Store CSRF token in Redis with a 7-day TTL matching session length
+  await redisClient.setEx(csrfKey, SESSION_TTL, csrfToken);
+
+  res.cookie("csrfToken", csrfToken, {
+    httpOnly: false, // Exposed to JS so Axios interceptor can read document.cookie
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    maxAge: SESSION_TTL * 1000,
+  });
+
+  return csrfToken;
+};
+
+export const verifyCSRFToken = async (req, res, next) => {
+  try {
+    if (req.method === "GET") {
+      return next();
+    }
+
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "User not authenticated",
+      });
+    }
+
+    const clientToken =
+      req.headers["x-csrf-token"] ||
+      req.headers["x-xsrf-token"] ||
+      req.headers["csrf-token"];
+
+    if (!clientToken) {
+      return res.status(403).json({
+        message: "CSRF Token missing. Please refresh the page.",
+        code: "CSRF_TOKEN_MISSING",
+      });
+    }
+
+    const csrfKey = `csrf:${userId}`;
+    const storedToken = await redisClient.get(csrfKey);
+
+    if (!storedToken) {
+      return res.status(403).json({
+        message: "CSRF Token Expired. Please try again.",
+        code: "CSRF_TOKEN_EXPIRED",
+      });
+    }
+
+    if (storedToken !== clientToken) {
+      return res.status(403).json({
+        message: "Invalid CSRF Token. Please refresh the page.",
+        code: "CSRF_TOKEN_INVALID",
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("CSRF verification error:", error);
+    return res.status(500).json({
+      message: "CSRF verification failed.",
+      code: "CSRF_VERIFICATION_ERROR",
+    });
+  }
+};
+
+export const revokeCSRFTOKEN = async (userId) => {
+  const csrfKey = `csrf:${userId}`;
+  await redisClient.del(csrfKey);
+};
+
+export const refreshCSRFToken = async (userId, res) => {
+  await revokeCSRFTOKEN(userId);
+  return await generateCSRFToken(userId, res);
+};
