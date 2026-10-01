@@ -17,8 +17,8 @@ const Verify = () => {
     // Guard: prevent duplicate calls from StrictMode double-mount
     if (verifyCalledRef.current) return;
     if (!token) {
-      setStatus("error"); // eslint-disable-line react-hooks/set-state-in-effect
-      setMessage("No verification token provided."); // eslint-disable-line react-hooks/set-state-in-effect
+      setStatus("error");
+      setMessage("No verification token provided.");
       return;
     }
 

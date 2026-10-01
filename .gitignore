@@ -22,3 +22,5 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+deployment_guide.md
+walkthrough.md

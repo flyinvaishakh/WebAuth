@@ -41,7 +41,7 @@ export const AppProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    fetchUser(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchUser();
   }, []);
 
   return (
