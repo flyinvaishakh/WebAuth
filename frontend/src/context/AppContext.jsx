@@ -14,7 +14,7 @@ export const AppProvider = ({ children }) => {
       const { data } = await api.get("/api/v1/me");
       setUser(data.user);
       setIsAuth(true);
-    } catch (error) {
+    } catch (_error) {
       setUser(null);
       setIsAuth(false);
     } finally {
@@ -29,7 +29,7 @@ export const AppProvider = ({ children }) => {
       setIsAuth(false);
       setUser(null);
       if (navigate) navigate("/login");
-    } catch (error) {
+    } catch (_error) {
       // Even if logout API fails, clear client state
       setIsAuth(false);
       setUser(null);
@@ -41,7 +41,7 @@ export const AppProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    fetchUser();
+    fetchUser(); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   return (

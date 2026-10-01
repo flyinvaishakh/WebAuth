@@ -44,7 +44,7 @@ const Dashboard = () => {
       navigate("/");
       return;
     }
-    fetchUsers();
+    fetchUsers(); // eslint-disable-line react-hooks/set-state-in-effect
   }, [currentUser, navigate, fetchUsers]);
 
   // Debounced search
